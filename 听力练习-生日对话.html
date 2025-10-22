@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>听力练习：生日对话</title>
+<style>
+  body {
+    font-family: "Microsoft YaHei", sans-serif;
+    background: linear-gradient(to bottom right, #f0f8ff, #e6f7ff);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 30px;
+  }
+  h1 {
+    color: #333;
+    margin-bottom: 10px;
+  }
+  audio {
+    margin: 20px 0;
+  }
+  .question {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    padding: 20px;
+    margin-bottom: 20px;
+    width: 90%;
+    max-width: 600px;
+  }
+  .question h3 {
+    margin-bottom: 10px;
+    color: #333;
+  }
+  label {
+    display: block;
+    margin-bottom: 8px;
+    cursor: pointer;
+  }
+  button {
+    background-color: #4CAF50;
+    color: white;
+    padding: 12px 24px;
+    margin: 10px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+  }
+  button:hover {
+    background-color: #45a049;
+  }
+  #result, #answers {
+    font-size: 18px;
+    margin-top: 20px;
+    font-weight: bold;
+  }
+</style>
+</head>
+<body>
+
+<h1>🎧 听力练习：生日对话</h1>
+<p>请先听下面的音频，然后完成 6 道选择题。</p>
+
+<audio controls>
+  <source src="456.wav" type="audio/wav">
+  您的浏览器不支持音频播放。
+</audio>
+
+<form id="quizForm">
+
+  <div class="question">
+    <h3>1. 小昭今天为什么很开心？</h3>
+    <label><input type="radio" name="q1" value="A"> 因为今天是周末</label>
+    <label><input type="radio" name="q1" value="B"> 因为今天是她的生日</label>
+    <label><input type="radio" name="q1" value="C"> 因为她考试通过了</label>
+    <label><input type="radio" name="q1" value="D"> 因为她要去旅游</label>
+  </div>
+
+  <div class="question">
+    <h3>2. 小李早上见到小昭时说了什么？</h3>
+    <label><input type="radio" name="q2" value="A"> 今天真冷啊</label>
+    <label><input type="radio" name="q2" value="B"> 早上好！你今天看起来很开心</label>
+    <label><input type="radio" name="q2" value="C"> 昨天睡得好吗？</label>
+    <label><input type="radio" name="q2" value="D"> 生日快乐！</label>
+  </div>
+
+  <div class="question">
+    <h3>3. 小昭打算晚上怎么庆祝生日？</h3>
+    <label><input type="radio" name="q3" value="A"> 自己在家看电影</label>
+    <label><input type="radio" name="q3" value="B"> 和家人去旅行</label>
+    <label><input type="radio" name="q3" value="C"> 和朋友一起去吃饭</label>
+    <label><input type="radio" name="q3" value="D"> 举办一个派对</label>
+  </div>
+
+  <div class="question">
+    <h3>4. 小昭邀请了谁一起去庆祝？</h3>
+    <label><input type="radio" name="q4" value="A"> 她的同事</label>
+    <label><input type="radio" name="q4" value="B"> 小李</label>
+    <label><input type="radio" name="q4" value="C"> 她的父母</label>
+    <label><input type="radio" name="q4" value="D"> 她的老师</label>
+  </div>
+
+  <div class="question">
+    <h3>5. 小李打算送给小昭什么？</h3>
+    <label><input type="radio" name="q5" value="A"> 一张生日卡</label>
+    <label><input type="radio" name="q5" value="B"> 一束花</label>
+    <label><input type="radio" name="q5" value="C"> 一个小礼物</label>
+    <label><input type="radio" name="q5" value="D"> 一顿晚餐</label>
+  </div>
+
+  <div class="question">
+    <h3>6. 小昭听到小李的回答后，她的反应是：</h3>
+    <label><input type="radio" name="q6" value="A"> 她说不用准备礼物</label>
+    <label><input type="radio" name="q6" value="B"> 她说谢谢并很期待</label>
+    <label><input type="radio" name="q6" value="C"> 她说要自己买礼物</label>
+    <label><input type="radio" name="q6" value="D"> 她说她不喜欢惊喜</label>
+  </div>
+
+  <button type="button" onclick="checkAnswers()">提交答案</button>
+  <button type="button" onclick="showCorrectAnswers()">显示正确答案</button>
+</form>
+
+<div id="result"></div>
+<div id="answers"></div>
+
+<script>
+  const correctAnswers = {
+    q1: "B",
+    q2: "B",
+    q3: "C",
+    q4: "B",
+    q5: "C",
+    q6: "B"
+  };
+
+  function checkAnswers() {
+    let score = 0;
+    let total = 6;
+    for (let q in correctAnswers) {
+      const answer = document.querySelector(`input[name="${q}"]:checked`);
+      if (answer && answer.value === correctAnswers[q]) {
+        score++;
+      }
+    }
+    document.getElementById("result").innerHTML = `✅ 你的得分是：${score} / ${total}`;
+  }
+
+  function showCorrectAnswers() {
+    let html = "<h3>📌 正确答案：</h3><ul>";
+    for (let q in correctAnswers) {
+      html += `<li>${q.toUpperCase()}: ${correctAnswers[q]}</li>`;
+    }
+    html += "</ul>";
+    document.getElementById("answers").innerHTML = html;
+  }
+</script>
+
+</body>
+</html>

@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>HSK2汉语拼音拼写 闯关游戏</title>
+<style>
+  :root{
+    --card-bg: rgba(255,255,255,0.95);
+    --accent1: #ffb347;
+    --accent2: #ffcc33;
+    --pool-gap: 8px;
+    --block-size: 56px;
+    --shadow: 0 8px 24px rgba(0,0,0,0.18);
+    --radius: 16px;
+  }
+
+  /* page background gradient (黄-橘调) */
+  body{
+    margin:0;
+    font-family: "Helvetica Neue", Arial, "PingFang SC", "Noto Sans", "Microsoft YaHei", sans-serif;
+    background: linear-gradient(135deg, #fff7e0 0%, #ffd89b 40%, #ffb347 100%);
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    box-sizing:border-box;
+  }
+
+  /* main wrapper */
+  .game-wrap{
+    width:100%;
+    max-width:980px;
+    background: var(--card-bg);
+    border-radius: 20px;
+    padding: 18px;
+    box-shadow: var(--shadow);
+    position:relative;
+    overflow:visible;
+  }
+
+  /* top header with title and undo */
+  .top-bar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+  }
+  .title-area{
+    display:flex;
+    align-items:center;
+    gap:12px;
+  }
+
+  /* five-point star icon */
+  .star{
+    width:56px;
+    height:56px;
+    flex:0 0 56px;
+  }
+
+  .main-title{
+    font-size:20px;
+    font-weight:700;
+    color:#7a4000;
+  }
+  .subtitle{
+    font-size:13px;
+    color:#5a3b00;
+    margin-top:4px;
+  }
+
+  .controls{
+    display:flex;
+    gap:8px;
+    align-items:center;
+  }
+
+  .btn{
+    background:linear-gradient(180deg,#fff 0%, #ffe6b3 100%);
+    border:1px solid rgba(0,0,0,0.06);
+    padding:8px 12px;
+    border-radius:12px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+    cursor:pointer;
+    font-weight:600;
+    font-size:14px;
+  }
+  .btn:active{ transform: translateY(1px); }
+  .icon-btn{
+    width:42px;
+    height:42px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:10px;
+  }
+
+  /* game area */
+  .game-area{
+    display:flex;
+    gap:18px;
+    margin-top:16px;
+    flex-wrap:wrap;
+    align-items:flex-start;
+  }
+
+  /* left: challenge card */
+  .card{
+    flex:1 1 360px;
+    min-width:260px;
+    background:linear-gradient(180deg, rgba(255,255,255,0.9), rgba(255,250,240,0.95));
+    border-radius:18px;
+    padding:18px;
+    box-shadow: var(--shadow);
+    position:relative;
+    overflow:visible;
+  }
+
+  /* star decorative behind card using SVG placed absolute */
+  .card .star-decor{
+    position:absolute;
+    right:-36px;
+    top:-36px;
+    width:120px;
+    height:120px;
+    opacity:0.14;
+    filter:drop-shadow(0 6px 12px rgba(0,0,0,0.08));
+    transform: rotate(12deg);
+  }
+
+  .char-display{
+    font-size:64px;
+    font-weight:800;
+    text-align:center;
+    padding:12px 8px;
+    color:#7a3600;
+  }
+  .play-row{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:12px;
+    margin-top:8px;
+  }
+
+  .play-btn{
+    background:linear-gradient(90deg,#ffd08a,#ffb347);
+    padding:10px 14px;
+    border-radius:12px;
+    color:#5a2d00;
+    font-weight:700;
+    cursor:pointer;
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+  }
+
+  /* slots for pinyin composition (for one or more syllables) */
+  .slots{
+    margin-top:14px;
+    display:flex;
+    gap:12px;
+    flex-wrap:wrap;
+    justify-content:center;
+  }
+
+  .syllable-slot{
+    background: rgba(250,240,230,0.9);
+    border-radius:12px;
+    padding:10px;
+    min-width:220px;
+    box-shadow: 0 8px 18px rgba(0,0,0,0.06);
+    display:flex;
+    gap:8px;
+    align-items:center;
+    justify-content:center;
+    flex-direction:column;
+  }
+
+  .slot-row{
+    display:flex;
+    gap:8px;
+    align-items:center;
+    justify-content:center;
+    margin-top:6px;
+  }
+
+  .dropzone{
+    width:var(--block-size);
+    height:var(--block-size);
+    border-radius:10px;
+    background:rgba(255,255,255,0.85);
+    border:2px dashed rgba(120,90,60,0.12);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-weight:700;
+    font-size:18px;
+    color:#7a4000;
+    transition:all 160ms ease;
+    user-select:none;
+  }
+  .dropzone.filled{
+    border-style:solid;
+    border-color:rgba(120,90,60,0.12);
+    background:linear-gradient(180deg,#fff,#fff6e8);
+  }
+
+  /* pool area with components */
+  .pool{
+    flex: 1 1 300px;
+    min-width:260px;
+    background:linear-gradient(180deg, rgba(255,255,255,0.9), rgba(255,245,230,0.95));
+    border-radius:18px;
+    padding:14px;
+    box-shadow: var(--shadow);
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+  }
+
+  .pool-title{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:8px;
+  }
+
+  .blocks{
+    display:flex;
+    gap:var(--pool-gap);
+    flex-wrap:wrap;
+    align-items:flex-start;
+    align-content:flex-start;
+  }
+
+  .block{
+    min-width:var(--block-size);
+    height:var(--block-size);
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:10px;
+    box-shadow: 0 8px 18px rgba(0,0,0,0.08);
+    cursor:grab;
+    user-select:none;
+    font-weight:800;
+    font-size:18px;
+    transform:translateZ(0);
+    transition: transform 140ms ease, box-shadow 120ms ease;
+    touch-action: none;
+  }
+  .block:active{ cursor:grabbing; transform:translateY(2px); }
+  .block:hover{ transform:translateY(-6px); }
+
+  /* different types color */
+  .b-sheng{ background: linear-gradient(180deg,#ffd4b3,#ffb98a); color:#6a3000; }
+  .b-yun{ background: linear-gradient(180deg,#ffe7b3,#ffd27a); color:#5a3300; }
+  .b-tone{ background: linear-gradient(180deg,#bff0ff,#9fe7ff); color:#064a4f; }
+
+  /* action row */
+  .action-row{
+    display:flex;
+    gap:12px;
+    margin-top:12px;
+    align-items:center;
+    justify-content:center;
+  }
+
+  .result{
+    text-align:center;
+    font-weight:700;
+    padding:6px 8px;
+    border-radius:10px;
+    min-height:28px;
+  }
+  .result.correct{ color: #0b6038; background: rgba(208,255,220,0.9); }
+  .result.wrong{ color:#8b1f1f; background: rgba(255,220,220,0.9); }
+
+  /* footer */
+  footer{
+    margin-top:16px;
+    font-size:12px;
+    color:#5a3b00;
+    text-align:center;
+  }
+
+  /* responsive */
+  @media (max-width:820px){
+    .game-area{ flex-direction:column; }
+    .card,.pool{ min-width:unset; width:100%; }
+    .syllable-slot{ min-width:unset; width:100%; }
+    .dropzone{ width:48px; height:48px; font-size:16px; }
+    .block{ min-width:48px; height:48px; font-size:16px; }
+  }
+
+  /* small helper */
+  .meta{
+    font-size:13px;color:#6a4000;font-weight:700;
+  }
+  .level-badge{
+    background:linear-gradient(90deg,#ffd47a,#ffb347);
+    padding:6px 10px;border-radius:10px;font-weight:800;
+  }
+
+  /* canvas fireworks overlay */
+  #fxCanvas{
+    position:fixed;
+    left:0;top:0;
+    width:100%; height:100%;
+    pointer-events:none;
+    z-index:9999;
+  }
+
+  /* hint text small */
+  .hint{
+    font-size:12px;color:#7a4a00;margin-top:6px;text-align:center;
+  }
+
+  /* small scoreboard */
+  .scoreboard{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    justify-content:center;
+    font-weight:800;
+  }
+
+</style>
+</head>
+<body>
+<canvas id="fxCanvas"></canvas>
+
+<div class="game-wrap" role="application" aria-label="HSK2汉语拼音拼写 闯关游戏">
+  <div class="top-bar">
+    <div class="title-area">
+      <!-- star SVG -->
+      <svg class="star" viewBox="0 0 100 100" aria-hidden="true">
+        <polygon points="50,6 61,40 98,40 68,60 79,94 50,74 21,94 32,60 2,40 39,40"
+          fill="#ffbf5a" stroke="#ff9f1c" stroke-width="2"></polygon>
+      </svg>
+      <div>
+        <div class="main-title">HSK2汉语拼音拼写 闯关游戏</div>
+        <div class="subtitle">听发音 → 拖拼音组件到槽位 → 检查答案（保留声调）</div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <div class="scoreboard" aria-live="polite">
+        <div>等级 <span id="level" class="level-badge">1</span></div>
+        <div>积分 <span id="score">0</span></div>
+      </div>
+      <button id="undoBtn" class="btn icon-btn" title="撤回上一步 / Undo">↶</button>
+    </div>
+  </div>
+
+  <div class="game-area">
+    <div class="card" id="card">
+      <svg class="card-decor" viewBox="0 0 120 120" style="position:absolute;left:-36px;bottom:-36px;width:120px;height:120px;opacity:0.06;">
+        <polygon points="60,0 72,44 120,44 82,68 96,120 60,92 24,120 38,68 0,44 48,44" fill="#ffb347"></polygon>
+      </svg>
+
+      <div class="char-display" id="charDisplay" aria-live="polite">汉字</div>
+
+      <div class="play-row">
+        <button id="playBtn" class="play-btn" title="播放发音 (Web Speech API)">🔊 播放发音</button>
+        <button id="checkBtn" class="btn">检查答案</button>
+        <button id="nextBtn" class="btn">下一题</button>
+      </div>
+
+      <div class="slots" id="slots" aria-label="拼音槽位"></div>
+
+      <div class="hint">提示：拖拽声母、韵母、声调（数字）到每个音节的槽位中</div>
+
+      <div class="action-row">
+        <div id="resultBox" class="result" aria-live="polite"></div>
+      </div>
+    </div>
+
+    <div class="pool" id="pool">
+      <div class="pool-title">
+        <div class="meta">拼音组件（拖拽到上方槽位）</div>
+        <div style="font-size:12px;color:#7a4a00;">（长按拖动或手机触摸拖放）</div>
+      </div>
+      <div id="blocks" class="blocks" aria-live="polite"></div>
+
+      <div style="margin-top:6px;display:flex;gap:8px;justify-content:center;">
+        <button id="shuffleBtn" class="btn">洗牌组件</button>
+        <button id="resetPoolBtn" class="btn">重置本题</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    使用示例 HSK2 词库（示例词汇至少 20 个）。发音由 Web Speech API (zh-CN, rate=0.9) 生成。
+  </footer>
+</div>
+
+<script>
+/*
+  HSK2 拼音拼写 闯关游戏（单文件）
+  要点：
+  - HSK2 示例词库（至少20个）
+  - 每题随机抽取一个词（单音节或多音节）
+  - 使用 Web Speech API 播放发音（zh-CN, rate=0.9）
+  - 拖拽/触摸支持：将声母/韵母/声调(数字) 拖到每个音节的槽位
+  - 保留声调比较（比如 "ni3"）
+  - 撤回功能：撤回最近一次放置
+  - 答对 +5 分，累计 20 分 升一级（level++，分数减去20）
+  - 答对后播放音乐并显示烟火（canvas）
+*/
+
+const HSK2_WORDS = [
+  // 每个词包含: character (字符串), pinyin (数组每音节带数字声调), components (数组对应音节对象)
+  // components 每个对象: {sheng:'', yun:'', tone:'1'|'2'|'3'|'4'|'5'}
+  { character: "我们", pinyin: ["wo3","men5"], components: [{sheng:'w',yun:'o',tone:'3'},{sheng:'m',yun:'en',tone:'5'}] },
+  { character: "学校", pinyin: ["xue2","xiao4"], components: [{sheng:'x',yun:'ue',tone:'2'},{sheng:'x',yun:'iao',tone:'4'}] },
+  { character: "医生", pinyin: ["yi1","sheng1"], components: [{sheng:'',yun:'yi',tone:'1'},{sheng:'sh',yun:'eng',tone:'1'}] },
+  { character: "公司", pinyin: ["gong1","si1"], components: [{sheng:'g',yun:'ong',tone:'1'},{sheng:'s',yun:'i',tone:'1'}] },
+  { character: "朋友", pinyin: ["peng2","you3"], components: [{sheng:'p',yun:'eng',tone:'2'},{sheng:'y',yun:'ou',tone:'3'}] },
+  { character: "游戏", pinyin: ["you2","xi4"], components: [{sheng:'y',yun:'ou',tone:'2'},{sheng:'x',yun:'i',tone:'4'}] },
+  { character: "希望", pinyin: ["xi1","wang4"], components: [{sheng:'x',yun:'i',tone:'1'},{sheng:'w',yun:'ang',tone:'4'}] },
+  { character: "信息", pinyin: ["xin4","xi1"], components: [{sheng:'x',yun:'in',tone:'4'},{sheng:'x',yun:'i',tone:'1'}] },
+  { character: "开始", pinyin: ["kai1","shi3"], components: [{sheng:'k',yun:'ai',tone:'1'},{sheng:'sh',yun:'i',tone:'3'}] },
+  { character: "工作", pinyin: ["gong1","zuo4"], components: [{sheng:'g',yun:'ong',tone:'1'},{sheng:'z',yun:'uo',tone:'4'}] },
+  { character: "问题", pinyin: ["wen4","ti2"], components: [{sheng:'w',yun:'en',tone:'4'},{sheng:'t',yun:'i',tone:'2'}] },
+  { character: "回答", pinyin: ["hui2","da2"], components: [{sheng:'h',yun:'ui',tone:'2'},{sheng:'d',yun:'a',tone:'2'}] },
+  { character: "电影", pinyin: ["dian4","ying3"], components: [{sheng:'d',yun:'ian',tone:'4'},{sheng:'y',yun:'ing',tone:'3'}] },
+  { character: "音乐", pinyin: ["yin1","yue4"], components: [{sheng:'y',yun:'in',tone:'1'},{sheng:'y',yun:'ue',tone:'4'}] },
+  { character: "机场", pinyin: ["ji1","chang3"], components: [{sheng:'j',yun:'i',tone:'1'},{sheng:'ch',yun:'ang',tone:'3'}] },
+  { character: "火车站", pinyin: ["huo3","che1","zhan4"], components: [{sheng:'h',yun:'uo',tone:'3'},{sheng:'ch',yun:'e',tone:'1'},{sheng:'zh',yun:'an',tone:'4'}] },
+  { character: "旅游", pinyin: ["lv3","you2"], components: [{sheng:'l',yun:'v',tone:'3'},{sheng:'y',yun:'ou',tone:'2'}] },
+  { character: "准备", pinyin: ["zhun3","bei4"], components: [{sheng:'zh',yun:'un',tone:'3'},{sheng:'b',yun:'ei',tone:'4'}] },
+  { character: "公园", pinyin: ["gong1","yuan2"], components: [{sheng:'g',yun:'ong',tone:'1'},{sheng:'y',yun:'uan',tone:'2'}] },
+  { character: "商店", pinyin: ["shang1","dian4"], components: [{sheng:'sh',yun:'ang',tone:'1'},{sheng:'d',yun:'ian',tone:'4'}] },
+  { character: "一起", pinyin: ["yi4","qi3"], components: [{sheng:'y',yun:'i',tone:'4'},{sheng:'q',yun:'i',tone:'3'}] },
+  { character: "照片", pinyin: ["zhao4","pian4"], components: [{sheng:'zh',yun:'ao',tone:'4'},{sheng:'p',yun:'ian',tone:'4'}] },
+  { character: "天气", pinyin: ["tian1","qi4"], components: [{sheng:'t',yun:'ian',tone:'1'},{sheng:'q',yun:'i',tone:'4'}] }
+];
+
+// DOM
+const charDisplay = document.getElementById('charDisplay');
+const playBtn = document.getElementById('playBtn');
+const slotsEl = document.getElementById('slots');
+const blocksEl = document.getElementById('blocks');
+const checkBtn = document.getElementById('checkBtn');
+const nextBtn = document.getElementById('nextBtn');
+const resultBox = document.getElementById('resultBox');
+const undoBtn = document.getElementById('undoBtn');
+const shuffleBtn = document.getElementById('shuffleBtn');
+const resetPoolBtn = document.getElementById('resetPoolBtn');
+const scoreEl = document.getElementById('score');
+const levelEl = document.getElementById('level');
+
+const fxCanvas = document.getElementById('fxCanvas');
+const fxCtx = fxCanvas.getContext('2d');
+
+// state
+let currentWord = null;
+let currentComponents = []; // pool components objects {id,type,text,origId}
+let placedHistory = []; // stack for undo {blockId,fromPoolIndex,toDropId}
+let score = 0;
+let level = 1;
+let uidCounter = 0;
+
+function uid(prefix='b'){ uidCounter++; return prefix + uidCounter; }
+
+// Resize canvas
+function resizeCanvas(){
+  fxCanvas.width = window.innerWidth;
+  fxCanvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+// utility: shuffle array
+function shuffle(a){
+  for(let i=a.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+
+// Prepare next question
+function newQuestion(){
+  clearResult();
+  placedHistory = [];
+  // choose random word different from previous if possible
+  let idx = Math.floor(Math.random()*HSK2_WORDS.length);
+  currentWord = HSK2_WORDS[idx];
+  renderWord(currentWord);
+  preparePool(currentWord);
+}
+
+// Render word slots
+function renderWord(word){
+  charDisplay.textContent = word.character;
+  slotsEl.innerHTML = '';
+  const syllables = word.components.length;
+  for(let i=0;i<syllables;i++){
+    const syl = word.components[i];
+    const sDiv = document.createElement('div');
+    sDiv.className = 'syllable-slot';
+    sDiv.dataset.index = i;
+
+    const label = document.createElement('div');
+    label.textContent = '音节 ' + (i+1);
+    label.style.fontSize='14px';
+    label.style.color='#7a4000';
+    sDiv.appendChild(label);
+
+    const row = document.createElement('div');
+    row.className = 'slot-row';
+
+    // create three dropzones: shengmu, yunmu, tone
+    const dzSh = makeDropzone(i,'sheng');
+    const dzY = makeDropzone(i,'yun');
+    const dzT = makeDropzone(i,'tone');
+
+    row.appendChild(dzSh);
+    row.appendChild(dzY);
+    row.appendChild(dzT);
+
+    sDiv.appendChild(row);
+    slotsEl.appendChild(sDiv);
+  }
+}
+
+// make dropzone
+function makeDropzone(syllIndex, compType){
+  const dz = document.createElement('div');
+  dz.className = 'dropzone';
+  dz.dataset.syll = syllIndex;
+  dz.dataset.type = compType;
+  dz.dataset.filled = 'false';
+  dz.dataset.blockId = '';
+  dz.addEventListener('dragover', ev => ev.preventDefault());
+  dz.addEventListener('drop', onDrop);
+  // touch fallback: allow click to remove
+  dz.addEventListener('click', () => {
+    if(dz.dataset.filled === 'true'){
+      // simulate undo of this single placement
+      const bid = dz.dataset.blockId;
+      undoPlacementById(bid);
+    }
+  });
+  return dz;
+}
+
+// prepare pool of components: include correct components for all syllables plus distractors
+function preparePool(word){
+  blocksEl.innerHTML = '';
+  currentComponents = [];
+
+  // gather correct components
+  word.components.forEach((syl, idx) => {
+    const a = [
+      {type:'sheng', text: syl.sheng || ''},
+      {type:'yun', text: syl.yun || ''},
+      {type:'tone', text: syl.tone}
+    ];
+    a.forEach(item=>{
+      const id=uid('c');
+      currentComponents.push({id:id, type:item.type, text:item.text, correctFor: {syl:idx,type:item.type}});
+    });
+  });
+
+  // add distracting components from other words (random pick)
+  let distractors = [];
+  for(let w of HSK2_WORDS){
+    if(w===word) continue;
+    w.components.forEach(s=>{
+      distractors.push({type:'sheng',text:s.sheng});
+      distractors.push({type:'yun',text:s.yun});
+      distractors.push({type:'tone',text:s.tone});
+    });
+  }
+  shuffle(distractors);
+  // create some distractors (limit)
+  const needed = Math.max(6, Math.min(12, Math.floor(word.components.length*3)));
+  for(let i=0;i<needed && i<distractors.length;i++){
+    const d = distractors[i];
+    // avoid adding empty sheng (when syl has empty sheng like yi)
+    if(d.text === '') continue;
+    const id = uid('c');
+    currentComponents.push({id:id,type:d.type,text:d.text, correctFor:null});
+  }
+
+  shuffle(currentComponents);
+  // render blocks
+  for(let c of currentComponents){
+    const b = document.createElement('div');
+    b.className = 'block ' + (c.type === 'sheng' ? 'b-sheng' : (c.type==='yun' ? 'b-yun' : 'b-tone'));
+    b.setAttribute('draggable','true');
+    b.dataset.id = c.id;
+    b.dataset.type = c.type;
+    b.dataset.text = c.text;
+    b.textContent = c.text === '' ? '∅' : c.text; // show ∅ for empty sheng (rare)
+    b.addEventListener('dragstart', onDragStart);
+    b.addEventListener('touchstart', touchStartBlock, {passive:false});
+    b.addEventListener('touchmove', touchMoveBlock, {passive:false});
+    b.addEventListener('touchend', touchEndBlock, {passive:false});
+    blocksEl.appendChild(b);
+  }
+}
+
+// Drag handlers
+let dragData = null;
+
+function onDragStart(e){
+  const id = e.target.dataset.id;
+  dragData = {id:id, type:e.target.dataset.type, text:e.target.dataset.text, el:e.target};
+  try{ e.dataTransfer.setData('text/plain', id); } catch(e){}
+  // small delay to hide original? keep it visible
+}
+
+function onDrop(e){
+  e.preventDefault();
+  const dz = e.currentTarget;
+  const syll = parseInt(dz.dataset.syll,10);
+  const type = dz.dataset.type;
+  let blockId = null;
+  // get id from dragData or dataTransfer
+  if(dragData && dragData.id){
+    blockId = dragData.id;
+  } else {
+    try{ blockId = e.dataTransfer.getData('text/plain'); } catch(e){}
+  }
+  if(!blockId) return;
+  const blockObj = currentComponents.find(c=>c.id===blockId);
+  if(!blockObj) return;
+
+  // ensure type match
+  if(blockObj.type !== type){
+    // reject by flashing
+    dz.style.transform='scale(1.04)';
+    setTimeout(()=>{ dz.style.transform=''; },200);
+    return;
+  }
+
+  // if dropzone already filled, return previous block to pool
+  if(dz.dataset.filled === 'true'){
+    undoPlacementByDz(dz);
+  }
+
+  // attach block into dropzone
+  dz.dataset.filled = 'true';
+  dz.dataset.blockId = blockId;
+  dz.classList.add('filled');
+  dz.textContent = blockObj.text === '' ? '∅' : blockObj.text;
+
+  // remove block from pool visually
+  const blockEl = document.querySelector('.block[data-id="'+blockId+'"]');
+  if(blockEl) blockEl.style.visibility='hidden';
+
+  // push to history for undo
+  placedHistory.push({blockId:blockId, fromPool:true, toDz: dz});
+
+  dragData = null;
+}
+
+// Undo helpers
+function undoPlacement(){
+  if(placedHistory.length === 0) return;
+  const last = placedHistory.pop();
+  const blockId = last.blockId;
+  // find dropzone where it was placed
+  const dz = findDropzoneByBlockId(blockId);
+  if(dz) undoPlacementByDz(dz);
+}
+
+function undoPlacementById(blockId){
+  // find in history if exists
+  // find dropzone
+  const dz = findDropzoneByBlockId(blockId);
+  if(dz) undoPlacementByDz(dz);
+}
+
+function findDropzoneByBlockId(blockId){
+  const dzs = document.querySelectorAll('.dropzone');
+  for(let dz of dzs){
+    if(dz.dataset.blockId === blockId) return dz;
+  }
+  return null;
+}
+
+function undoPlacementByDz(dz){
+  const bid = dz.dataset.blockId;
+  if(!bid) return;
+  // clear dz
+  dz.dataset.filled = 'false';
+  dz.dataset.blockId = '';
+  dz.classList.remove('filled');
+  dz.textContent = '';
+  // show block again
+  const blockEl = document.querySelector('.block[data-id="'+bid+'"]');
+  if(blockEl) blockEl.style.visibility='visible';
+  // remove corresponding entry from history (may not be last)
+  for(let i=placedHistory.length-1;i>=0;i--){
+    if(placedHistory[i].blockId === bid){
+      placedHistory.splice(i,1);
+      break;
+    }
+  }
+}
+
+// Check answer
+function checkAnswer(){
+  const syllables = currentWord.components.length;
+  let allCorrect = true;
+  let userPinyin = [];
+  for(let i=0;i<syllables;i++){
+    const syl = currentWord.components[i];
+    const sh = document.querySelector('.dropzone[data-syll="'+i+'"][data-type="sheng"]');
+    const yn = document.querySelector('.dropzone[data-syll="'+i+'"][data-type="yun"]');
+    const tn = document.querySelector('.dropzone[data-syll="'+i+'"][data-type="tone"]');
+    const shText = sh && sh.dataset.filled==='true' ? (sh.dataset.blockId ? getBlockTextById(sh.dataset.blockId) : '') : '';
+    const ynText = yn && yn.dataset.filled==='true' ? (yn.dataset.blockId ? getBlockTextById(yn.dataset.blockId) : '') : '';
+    const tnText = tn && tn.dataset.filled==='true' ? (tn.dataset.blockId ? getBlockTextById(tn.dataset.blockId) : '') : '';
+
+    // Default empty sheng to '' (some syllables like 'yi' have empty sheng)
+    const built = (shText||'') + (ynText||'') + (tnText||'');
+    userPinyin.push(built);
+    const correct = currentWord.pinyin[i];
+    if(built !== correct){
+      allCorrect = false;
+    }
+  }
+
+  if(allCorrect){
+    onCorrect(userPinyin);
+  } else {
+    onWrong(userPinyin);
+  }
+}
+
+function getBlockTextById(id){
+  const comp = currentComponents.find(c=>c.id===id);
+  return comp ? comp.text : '';
+}
+
+// Result handling
+function clearResult(){
+  resultBox.textContent='';
+  resultBox.classList.remove('correct','wrong');
+}
+
+function onCorrect(userPinyin){
+  resultBox.textContent = '答对了！拼音：' + userPinyin.join(' ');
+  resultBox.classList.add('correct');
+  resultBox.classList.remove('wrong');
+  // add score +5
+  score += 5;
+  // level up logic
+  if(score >= 20){
+    score -= 20;
+    level++;
+    levelEl.textContent = level;
+    // show alert optional
+    setTimeout(()=> {
+      // small celebratory prompt
+      alert('恭喜！升一级：' + level);
+    }, 60);
+  }
+  scoreEl.textContent = score;
+  // play music + fireworks
+  playVictorySound();
+  triggerFireworks();
+}
+
+function onWrong(userPinyin){
+  // show correct pinyin
+  resultBox.textContent = '错误。正确：' + currentWord.pinyin.join(' ');
+  resultBox.classList.add('wrong');
+  resultBox.classList.remove('correct');
+  // small shake animation
+  const card = document.getElementById('card');
+  card.animate([{transform:'translateX(0)'},{transform:'translateX(-8px)'},{transform:'translateX(8px)'},{transform:'translateX(0)'}],{duration:360,iterations:1});
+}
+
+// play speech using Web Speech API
+function playPronunciation(){
+  if(!('speechSynthesis' in window)){
+    alert('当前浏览器不支持 Web Speech API 发音。');
+    return;
+  }
+  // join characters or use the pinyin? spec: play 汉字发音
+  const utter = new SpeechSynthesisUtterance(currentWord.character);
+  utter.lang = 'zh-CN';
+  utter.rate = 0.9;
+  window.speechSynthesis.cancel(); // stop other
+  window.speechSynthesis.speak(utter);
+}
+
+// next question
+function nextQuestion(){
+  newQuestion();
+}
+
+// shuffle pool
+function shufflePool(){
+  // shuffle DOM nodes of blocks
+  const blocks = Array.from(blocksEl.children);
+  shuffle(blocks);
+  blocks.forEach(b=>blocksEl.appendChild(b));
+}
+
+// reset this question: return all placed blocks to pool
+function resetPool(){
+  // reveal any hidden blocks and clear dropzones
+  const dzs = document.querySelectorAll('.dropzone');
+  dzs.forEach(dz=>{
+    if(dz.dataset.filled === 'true'){
+      const bid = dz.dataset.blockId;
+      const blockEl = document.querySelector('.block[data-id="'+bid+'"]');
+      if(blockEl) blockEl.style.visibility='visible';
+      dz.dataset.filled='false';
+      dz.dataset.blockId='';
+      dz.classList.remove('filled');
+      dz.textContent='';
+    }
+  });
+  placedHistory = [];
+  clearResult();
+}
+
+// event bindings
+playBtn.addEventListener('click', playPronunciation);
+checkBtn.addEventListener('click', checkAnswer);
+nextBtn.addEventListener('click', nextQuestion);
+undoBtn.addEventListener('click', undoPlacement);
+shuffleBtn.addEventListener('click', shufflePool);
+resetPoolBtn.addEventListener('click', resetPool);
+
+// init
+newQuestion();
+
+// ------------------------------
+// Touch drag implementation (simple)
+// Allow dragging block elements on touch and dropping into dropzones
+let touchDrag = null;
+
+function touchStartBlock(e){
+  e.preventDefault();
+  const t = e.target.closest('.block');
+  if(!t) return;
+  const touch = e.changedTouches[0];
+  const clone = t.cloneNode(true);
+  clone.style.position='fixed';
+  clone.style.left = (touch.clientX - 28) + 'px';
+  clone.style.top = (touch.clientY - 28) + 'px';
+  clone.style.zIndex = 9998;
+  clone.style.pointerEvents='none';
+  clone.style.opacity = 0.95;
+  clone.dataset.touchClone = '1';
+  document.body.appendChild(clone);
+  touchDrag = {origEl: t, clone: clone, id: t.dataset.id, type: t.dataset.type, text: t.dataset.text};
+  // hide original visually
+  t.style.visibility = 'hidden';
+}
+
+function touchMoveBlock(e){
+  if(!touchDrag) return;
+  e.preventDefault();
+  const touch = e.changedTouches[0];
+  const c = touchDrag.clone;
+  c.style.left = (touch.clientX - 28) + 'px';
+  c.style.top = (touch.clientY - 28) + 'px';
+}
+
+function touchEndBlock(e){
+  if(!touchDrag) return;
+  e.preventDefault();
+  const touch = e.changedTouches[0];
+  const x = touch.clientX;
+  const y = touch.clientY;
+  // find element at point
+  let el = document.elementFromPoint(x,y);
+  // if dropzone or inside dropzone
+  let dz = el ? el.closest('.dropzone') : null;
+  if(dz){
+    // simulate drop if types match
+    if(dz.dataset.type === touchDrag.type){
+      // if filled, undo first
+      if(dz.dataset.filled === 'true'){ undoPlacementByDz(dz); }
+      dz.dataset.filled = 'true';
+      dz.dataset.blockId = touchDrag.id;
+      dz.classList.add('filled');
+      dz.textContent = touchDrag.text === '' ? '∅' : touchDrag.text;
+      // hide original
+      const orig = touchDrag.origEl;
+      if(orig) orig.style.visibility='hidden';
+      placedHistory.push({blockId:touchDrag.id, fromPool:true, toDz:dz});
+    } else {
+      // rejected; show a small wiggle
+      dz && dz.animate([{transform:'scale(1)'},{transform:'scale(1.05)'},{transform:'scale(1)'}],{duration:240});
+      // return original
+      const orig = touchDrag.origEl;
+      if(orig) orig.style.visibility='visible';
+    }
+  } else {
+    // drop outside: return original to pool
+    const orig = touchDrag.origEl;
+    if(orig) orig.style.visibility='visible';
+  }
+  // remove clone
+  if(touchDrag.clone && touchDrag.clone.parentNode) touchDrag.clone.parentNode.removeChild(touchDrag.clone);
+  touchDrag = null;
+}
+
+// ------------------------------
+// Fireworks (canvas) + Victory sound (WebAudio)
+let particles = [];
+function triggerFireworks(){
+  // create bursts at random positions
+  const w = fxCanvas.width, h = fxCanvas.height;
+  for(let i=0;i<6;i++){
+    createBurst(Math.random()*(w*0.8)+w*0.1, Math.random()*(h*0.4)+h*0.1);
+  }
+  animateFx();
+}
+
+function createBurst(x,y){
+  const colors = ['#ff4d4d','#ffb84d','#fff14d','#4dffb8','#4dd0ff','#b84dff'];
+  const count = 28 + Math.floor(Math.random()*20);
+  for(let i=0;i<count;i++){
+    const angle = Math.random()*Math.PI*2;
+    const speed = 2 + Math.random()*5;
+    particles.push({
+      x:x, y:y,
+      vx: Math.cos(angle)*speed,
+      vy: Math.sin(angle)*speed,
+      life: 60 + Math.floor(Math.random()*40),
+      age:0,
+      color: colors[Math.floor(Math.random()*colors.length)],
+      size: 2 + Math.random()*3
+    });
+  }
+}
+
+let fxAnimating = false;
+function animateFx(){
+  if(fxAnimating) return;
+  fxAnimating = true;
+  const anim = ()=>{
+    fxCtx.clearRect(0,0,fxCanvas.width,fxCanvas.height);
+    for(let i=particles.length-1;i>=0;i--){
+      const p = particles[i];
+      p.age++;
+      p.vy += 0.06; // gravity
+      p.x += p.vx;
+      p.y += p.vy;
+      const t = 1 - p.age / p.life;
+      if(t <= 0) {
+        particles.splice(i,1);
+        continue;
+      }
+      fxCtx.globalAlpha = Math.max(0, t);
+      fxCtx.fillStyle = p.color;
+      fxCtx.beginPath();
+      fxCtx.arc(p.x,p.y, p.size * (0.6 + t*0.8), 0, Math.PI*2);
+      fxCtx.fill();
+      // trail
+      fxCtx.globalAlpha = Math.max(0, t*0.4);
+      fxCtx.fillRect(p.x - 1, p.y - 1, 2, 2);
+    }
+    fxCtx.globalAlpha = 1;
+    if(particles.length > 0){
+      requestAnimationFrame(anim);
+    } else {
+      fxCtx.clearRect(0,0,fxCanvas.width,fxCanvas.height);
+      fxAnimating = false;
+    }
+  };
+  requestAnimationFrame(anim);
+}
+
+// simple victory melody using WebAudio
+function playVictorySound(){
+  try{
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const notes = [523.25,659.25,783.99,1046.5]; // C5 E5 G5 C6
+    let t = ctx.currentTime;
+    const dur = 0.18;
+    notes.forEach((f, idx)=>{
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = 'sine';
+      o.frequency.value = f;
+      g.gain.value = 0.001;
+      o.connect(g);
+      g.connect(ctx.destination);
+      o.start(t + idx*dur*0.9);
+      g.gain.linearRampToValueAtTime(0.08, t + idx*dur*0.9 + 0.02);
+      g.gain.linearRampToValueAtTime(0.0001, t + idx*dur*0.9 + dur);
+      o.stop(t + idx*dur*0.9 + dur + 0.02);
+    });
+    // unlock audio on iOS: small buffer
+  }catch(e){
+    console.warn('Audio error', e);
+  }
+}
+
+// Accessibility: keyboard support for check/next
+document.addEventListener('keydown', (e)=>{
+  if(e.key === 'Enter'){
+    checkAnswer();
+  } else if(e.key === ' '){
+    e.preventDefault();
+    playPronunciation();
+  }
+});
+
+// On load ensure speechSynthesis voices warmed up (some browsers need)
+if('speechSynthesis' in window){
+  window.speechSynthesis.onvoiceschanged = ()=>{};
+}
+
+// initial score/level display
+scoreEl.textContent = score;
+levelEl.textContent = level;
+
+</script>
+</body>
+</html>
